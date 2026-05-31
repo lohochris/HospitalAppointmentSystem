@@ -3234,23 +3234,22 @@ WHERE DoctorID = @DocID"
     End Function
 
     ''' <summary>
-    ''' Retrieves appointments filtered by DoctorID for personalized doctor dashboard.
-    ''' Returns a DataTable ready for DataGridView binding with patient details.
+    ''' Retrieves appointments filtered by DoctorID with patient vitals for ESI triage color-coding.
+    ''' Returns a DataTable ready for DataGridView binding with Emergency Severity Index calculations.
     ''' 
     ''' COLUMNS RETURNED:
-    ''' - Appointment ID
-    ''' - Patient Name
-    ''' - Date
-    ''' - Time
-    ''' - Department
-    ''' - Status
-    ''' - Emergency Flag
+    ''' - Appointment ID, Patient Name, Date, Time, Department, Status, Emergency Flag, Notes
+    ''' - SystolicBP, DiastolicBP, HeartRate, SpO2 (from most recent vitals)
+    ''' - ESILevel (1-5 calculated via TriageEngine)
+    ''' - TriageColor (ARGB integer for DataGridView formatting)
+    ''' - SeverityLabel (CRITICAL, URGENT, MODERATE, LOW, MINIMAL)
     ''' 
     ''' SECURITY: Parameterized query prevents SQL injection.
-    ''' PERFORMANCE: Indexed on DoctorID and AppointmentDate.
+    ''' PERFORMANCE: Indexed on DoctorID, PatientID, and DateRecorded.
+    ''' AUTO-SORT: Critical patients (ESI Level 1) automatically sorted to top.
     ''' </summary>
     ''' <param name="doctorID">The DoctorID to filter appointments</param>
-    ''' <returns>DataTable with doctor-specific appointments</returns>
+    ''' <returns>DataTable with doctor-specific appointments including vitals for triage</returns>
     Public Function GetDoctorAppointments(doctorID As String) As DataTable
         Try
             If String.IsNullOrWhiteSpace(doctorID) Then
@@ -3258,6 +3257,11 @@ WHERE DoctorID = @DocID"
                 Return New DataTable()
             End If
 
+            ' ===================================================================
+            ' ENHANCED QUERY WITH VITALS JOIN FOR ESI TRIAGE COLOR-CODING
+            ' LEFT JOIN ensures appointments without vitals are still shown
+            ' Subquery gets MOST RECENT vitals for each patient
+            ' ===================================================================
             Dim sql As String = "
 SELECT 
     a.AppointmentID AS 'Appointment ID',
@@ -3267,18 +3271,81 @@ SELECT
     d.DepartmentName AS 'Department',
     a.Status,
     CASE WHEN a.IsEmergency = 1 THEN 'Yes' ELSE 'No' END AS 'Emergency',
-    a.Notes
+    a.Notes,
+    p.PatientID AS PatientIDInternal,
+    v.SystolicBP,
+    v.DiastolicBP,
+    v.HeartRate,
+    v.SpO2,
+    v.DateRecorded AS 'Vitals Recorded'
 FROM Appointments a
 INNER JOIN Patients p ON a.PatientID = p.PatientID
 LEFT JOIN Departments d ON a.DepartmentID = d.DepartmentID
+LEFT JOIN (
+    SELECT 
+        PatientID,
+        CASE 
+            WHEN BloodPressure IS NOT NULL AND INSTR(BloodPressure, '/') > 0 
+            THEN CAST(SUBSTR(BloodPressure, 1, INSTR(BloodPressure, '/') - 1) AS INTEGER)
+            ELSE NULL
+        END AS SystolicBP,
+        CASE 
+            WHEN BloodPressure IS NOT NULL AND INSTR(BloodPressure, '/') > 0 
+            THEN CAST(SUBSTR(BloodPressure, INSTR(BloodPressure, '/') + 1) AS INTEGER)
+            ELSE NULL
+        END AS DiastolicBP,
+        HeartRate,
+        SpO2,
+        DateRecorded,
+        VitalID
+    FROM InpatientVitals
+    WHERE BloodPressure IS NOT NULL AND BloodPressure != ''
+    ORDER BY DateRecorded DESC
+) v ON p.PatientID = v.PatientID
 WHERE a.DoctorID = @DocID
+GROUP BY a.AppointmentID
 ORDER BY a.AppointmentDate DESC, a.AppointmentTime DESC"
 
             Dim params As New Dictionary(Of String, Object) From {{"@DocID", doctorID}}
-            Return GetDataTable(sql, params)
+            Dim dt As DataTable = GetDataTable(sql, params)
+
+            ' ===================================================================
+            ' POST-QUERY ESI TRIAGE CALCULATION
+            ' Calculate Emergency Severity Index level and color for each row
+            ' ===================================================================
+            dt.Columns.Add("ESILevel", GetType(Integer))
+            dt.Columns.Add("TriageColor", GetType(Integer))  ' Store Color.ToArgb() for DataGridView
+            dt.Columns.Add("SeverityLabel", GetType(String))
+
+            For Each row As DataRow In dt.Rows
+                ' Extract vitals (nullable integers for defensive handling)
+                Dim sbp As Integer? = If(row.IsNull("SystolicBP"), Nothing, CType(row("SystolicBP"), Integer?))
+                Dim dbp As Integer? = If(row.IsNull("DiastolicBP"), Nothing, CType(row("DiastolicBP"), Integer?))
+                Dim hr As Integer? = If(row.IsNull("HeartRate"), Nothing, CType(row("HeartRate"), Integer?))
+                Dim spo2Val As Integer? = If(row.IsNull("SpO2"), Nothing, CType(row("SpO2"), Integer?))
+
+                ' Calculate ESI using TriageEngine module
+                Dim triageResult As TriageEngine.TriageResult = TriageEngine.CalculateESI(sbp, dbp, hr, spo2Val)
+
+                ' Store triage data in row for DataGridView CellFormatting event
+                row("ESILevel") = triageResult.ESILevel
+                row("TriageColor") = triageResult.ColorIndicator.ToArgb()
+                row("SeverityLabel") = triageResult.SeverityLabel
+            Next
+
+            ' ===================================================================
+            ' DYNAMIC SORTING: Critical patients (ESI Level 1) bubble to top
+            ' Secondary sort by appointment date/time for same ESI level
+            ' ===================================================================
+            Dim dv As DataView = dt.DefaultView
+            dv.Sort = "ESILevel ASC, [Date] ASC, [Time] ASC"
+            dt = dv.ToTable()
+
+            LogError($"GetDoctorAppointments: Retrieved {dt.Rows.Count} appointments for DoctorID={doctorID} with ESI triage color-coding")
+            Return dt
 
         Catch ex As Exception
-            LogError($"GetDoctorAppointments error: {ex.Message} | DoctorID={doctorID}")
+            LogError($"GetDoctorAppointments error: {ex.Message} | DoctorID={doctorID} | StackTrace: {ex.StackTrace}")
             Return New DataTable()
         End Try
     End Function

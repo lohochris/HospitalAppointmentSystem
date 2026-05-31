@@ -76,6 +76,15 @@
     <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
       <HintPath>..\packages\EntityFramework.6.4.4\lib\net45\EntityFramework.SqlServer.dll</HintPath>
     </Reference>
+    <Reference Include="Microsoft.Web.WebView2.Core, Version=1.0.3967.48, Culture=neutral, PublicKeyToken=2a8ab48044d2601e, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Web.WebView2.1.0.3967.48\lib\net462\Microsoft.Web.WebView2.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Web.WebView2.WinForms, Version=1.0.3967.48, Culture=neutral, PublicKeyToken=2a8ab48044d2601e, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Web.WebView2.1.0.3967.48\lib\net462\Microsoft.Web.WebView2.WinForms.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Web.WebView2.Wpf, Version=1.0.3967.48, Culture=neutral, PublicKeyToken=2a8ab48044d2601e, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Web.WebView2.1.0.3967.48\lib\net462\Microsoft.Web.WebView2.Wpf.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Core" />
@@ -133,6 +142,9 @@
     <Compile Include="FormSymptomChecker.vb">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="FormTelemedicine.vb">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Program.vb" />
     <Compile Include="ModuleDatabase.vb" />
     <Compile Include="ModuleValidation.vb" />
@@ -156,7 +168,9 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="SessionManager.vb" />
+    <Compile Include="TelemedicineManager.vb" />
     <Compile Include="TEST_AuditTrailValidation.vb" />
+    <Compile Include="TriageEngine.vb" />
     <Compile Include="UserAccount.vb" />
     <Compile Include="PatientModel.vb" />
     <Compile Include="FormPatientManagement.vb">
@@ -172,8 +186,10 @@
     <None Include="App.config" />
     <None Include="APPOINTMENT_BOOKING_CODE_CHANGES.md" />
     <None Include="APPOINTMENT_BOOKING_IMPLEMENTATION_GUIDE.md" />
+    <None Include="BUTTON_WIRING_QUICK_REFERENCE.md" />
     <None Include="CODE_CHANGES_LOG.md" />
     <None Include="COMPLETE_MEDICAL_STAFF_DIRECTORY.md" />
+    <None Include="COMPLETE_TELEHEALTH_BUTTON_GUIDE.md" />
     <None Include="CRITICAL_FIX_SAVEPATIENT_EXCEPTIONS.md" />
     <None Include="DATABASE_MIGRATION_GUIDE.md" />
     <None Include="DEBUGGING_GUIDE.md" />
@@ -184,15 +200,24 @@
     <None Include="DOCTORS_MANAGEMENT_RBAC_GUIDE.md" />
     <None Include="DOCTOR_AUTOMATIC_PROVISIONING_IMPLEMENTATION.md" />
     <None Include="DOCUMENTATION_INDEX.md" />
+    <None Include="DYNAMIC_BUTTON_INJECTION_COMPLETE.md" />
     <None Include="ENTERPRISE_DATABASE_EXPANSION_DOCUMENTATION.md" />
     <None Include="ENTERPRISE_MEDICAL_ECOSYSTEM_IMPLEMENTATION_GUIDE.md" />
+    <None Include="ESI_TRIAGE_DELIVERY_SUMMARY.md" />
+    <None Include="ESI_TRIAGE_QUICK_REFERENCE.md" />
     <None Include="FINAL_PATIENT_MODULE_SUMMARY.md" />
     <None Include="FIX_SQLITE_REFERENCE.md" />
     <None Include="FIX_UNIQUE_CONSTRAINT_PATIENTID.md" />
+    <None Include="HTTPS_PATCH_DELIVERY_SUMMARY.md" />
+    <None Include="IMPLEMENTATION_COMPLETE_SUMMARY.md" />
     <None Include="IMPLEMENTATION_SUMMARY.md" />
     <None Include="INTEGRATION_GUIDE.md" />
     <None Include="INTELLIGENT_CLINICAL_RISK_ASSESSMENT_IMPLEMENTATION.md" />
     <None Include="ISSUE_RESOLVED.md" />
+    <None Include="MODULE1_DYNAMIC_TRIAGE_IMPLEMENTATION_COMPLETE.md" />
+    <None Include="MODULE2_APPOINTMENT_TELEMEDICINE_INTEGRATION.md" />
+    <None Include="MODULE2_HTTPS_VALIDATION_PATCH.md" />
+    <None Include="MODULE2_TELEMEDICINE_IMPLEMENTATION_COMPLETE.md" />
     <None Include="packages.config" />
     <None Include="PATIENT_SAVE_ERROR_FIX_DOCUMENTATION.md" />
     <None Include="PATIENT_VITALS_IMPLEMENTATION.md" />
@@ -205,6 +230,10 @@
     <None Include="QUICK_START_ENTERPRISE_MEDICAL_ECOSYSTEM.md" />
     <None Include="QUICK_START_ERROR_FIX.md" />
     <None Include="QUICK_START_RBAC_DASHBOARD.md" />
+    <None Include="QUICK_START_TELEMEDICINE_TESTING.md" />
+    <None Include="QUICK_TEST_HTTPS_PATCH.md" />
+    <None Include="QUICK_TEST_TELEMEDICINE_FIX.md" />
+    <None Include="QUICK_VISUAL_VERIFICATION.md" />
     <None Include="RBAC_DASHBOARD_DELIVERY_SUMMARY.md" />
     <None Include="RBAC_DASHBOARD_IMPLEMENTATION_GUIDE.md" />
     <None Include="README_AUDIT_TRAIL_SUMMARY.md" />
@@ -215,7 +244,12 @@
     <None Include="SYMPTOM_CHECKER_PROFESSIONAL_DESKTOP_UI_REDESIGN.md" />
     <None Include="SYMPTOM_CHECKER_ROUTING_FIX.md" />
     <None Include="SYSTEM_SECURITY_AUDIT_TRAIL_IMPLEMENTATION.md" />
+    <None Include="TELEMEDICINE_DELIVERY_SUMMARY.md" />
+    <None Include="TELEMEDICINE_INTEGRATION_CODE_REFERENCE.md" />
+    <None Include="TELEMEDICINE_UI_FIX_IMPLEMENTATION.md" />
+    <None Include="TELEMEDICINE_VISUAL_REFERENCE.md" />
     <None Include="TEST_SCENARIOS_PATIENT_SAVE_FIX.md" />
+    <None Include="TRIAGE_COLORCODING_INTEGRATION_GUIDE.md" />
     <None Include="UI_VISUAL_REFERENCE.md" />
   </ItemGroup>
   <ItemGroup>
@@ -231,7 +265,10 @@
   <ItemGroup>
     <Content Include="AUDIT_TRAIL_ARCHITECTURE_DIAGRAM.txt" />
     <Content Include="AUDIT_TRAIL_QUICK_REFERENCE.txt" />
+    <Content Include="ESI_TRIAGE_TEST_SCRIPT.sql" />
+    <Content Include="QUICK_COPY_PASTE_BUTTON_CODE.txt" />
     <Content Include="QUICK_START_CARD.txt" />
+    <Content Include="TelehealthButtonCodeTemplate.vb.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
@@ -241,7 +278,9 @@
     <Error Condition="!Exists('..\packages\EntityFramework.6.4.4\build\EntityFramework.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\EntityFramework.6.4.4\build\EntityFramework.props'))" />
     <Error Condition="!Exists('..\packages\EntityFramework.6.4.4\build\EntityFramework.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\EntityFramework.6.4.4\build\EntityFramework.targets'))" />
     <Error Condition="!Exists('..\packages\Stub.System.Data.SQLite.Core.NetFramework.1.0.118.0\build\net46\Stub.System.Data.SQLite.Core.NetFramework.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Stub.System.Data.SQLite.Core.NetFramework.1.0.118.0\build\net46\Stub.System.Data.SQLite.Core.NetFramework.targets'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.Web.WebView2.1.0.3967.48\build\Microsoft.Web.WebView2.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Web.WebView2.1.0.3967.48\build\Microsoft.Web.WebView2.targets'))" />
   </Target>
   <Import Project="..\packages\EntityFramework.6.4.4\build\EntityFramework.targets" Condition="Exists('..\packages\EntityFramework.6.4.4\build\EntityFramework.targets')" />
   <Import Project="..\packages\Stub.System.Data.SQLite.Core.NetFramework.1.0.118.0\build\net46\Stub.System.Data.SQLite.Core.NetFramework.targets" Condition="Exists('..\packages\Stub.System.Data.SQLite.Core.NetFramework.1.0.118.0\build\net46\Stub.System.Data.SQLite.Core.NetFramework.targets')" />
+  <Import Project="..\packages\Microsoft.Web.WebView2.1.0.3967.48\build\Microsoft.Web.WebView2.targets" Condition="Exists('..\packages\Microsoft.Web.WebView2.1.0.3967.48\build\Microsoft.Web.WebView2.targets')" />
 </Project>

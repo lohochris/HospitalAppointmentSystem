@@ -10,6 +10,7 @@ Option Explicit On
 
 Imports System.Drawing
 Imports System.Windows.Forms
+Imports System.Data
 Imports Microsoft.VisualBasic
 
 Public Class FormMain
@@ -21,6 +22,8 @@ Public Class FormMain
     Private WithEvents btnAppointments As Button
     Private WithEvents btnPatients As Button
     Private WithEvents btnDoctors As Button
+    Private WithEvents btnTelemedicine As Button  ' NEW: Telemedicine video consultation
+    Private WithEvents btnLaunchTelehealth As Button  ' DYNAMIC: Context-aware telehealth launcher
     Private WithEvents btnLogout As Button
     Private lblWelcome As Label
     Private lblRole As Label
@@ -110,12 +113,13 @@ Public Class FormMain
         btnAppointments = CreateMenuButton("Appointments", 280)
         btnPatients = CreateMenuButton("Patients", 330)
         btnDoctors = CreateMenuButton("Doctors Management", 380)
+        btnTelemedicine = CreateMenuButton("🎥 Telemedicine", 430)  ' NEW: Video consultation
         btnLogout = CreateMenuButton("Logout", 530)
 
         ' Add controls to sidebar
         pnlSidebar.Controls.AddRange(New Control() {
             lblAppTitle, lblWelcome, lblRole, sepLine,
-            btnAdminAnalytics, btnSymptomChecker, btnAppointments, btnPatients, btnDoctors, btnLogout
+            btnAdminAnalytics, btnSymptomChecker, btnAppointments, btnPatients, btnDoctors, btnTelemedicine, btnLogout
         })
 
         ' Content Panel (Right Area)
@@ -208,6 +212,12 @@ Public Class FormMain
             .Visible = False
         }
 
+        ' ===================================================================
+        ' ESI TRIAGE COLOR-CODING: Add CellFormatting event handler
+        ' Automatically applies Emergency Severity Index visual triage system
+        ' ===================================================================
+        AddHandler dgvDashboardData.CellFormatting, AddressOf DgvDashboardData_CellFormatting
+
         pnlContent.Controls.AddRange(New Control() {
             lblHeader, lblDateTime, pnlStats, lblDescription, dgvDashboardData
         })
@@ -295,6 +305,12 @@ Public Class FormMain
             ' ===================================================================
             ConfigureDashboardForRole(currentUser.Role, currentUser.Username, currentUser.UserID)
 
+            ' ===================================================================
+            ' DYNAMIC RUNTIME UI INJECTION: TELEHEALTH LAUNCH BUTTON
+            ' Programmatically injects context-aware telehealth button into sidebar
+            ' ===================================================================
+            InjectTelehealthButton()
+
         Catch ex As Exception
             MessageBox.Show("Error loading main form: " & ex.Message, "Error",
                 MessageBoxButtons.OK, MessageBoxIcon.Error)
@@ -350,6 +366,115 @@ Public Class FormMain
         ' - btnAppointments (appointment booking/viewing)
         ' - btnLogout (session management)
     End Sub
+
+#Region "Dynamic Runtime UI Injection"
+    ''' <summary>
+    ''' ENTERPRISE RUNTIME UI INJECTION ROUTINE: LAUNCH TELEHEALTH BUTTON
+    ''' 
+    ''' FUNCTIONALITY:
+    ''' - Programmatically injects "Launch Telehealth" button into sidebar at runtime
+    ''' - Prevents duplicate button creation with defensive existence checks
+    ''' - Matches styling and positioning of existing Cancel button (red theme)
+    ''' - Calculates dynamic coordinates with 6-pixel spacing from reference button
+    ''' - Wires Click event to btnLaunchTelehealth_Click handler
+    ''' 
+    ''' POSITIONING LOGIC:
+    ''' - Locates existing btnTelemedicine button as anchor reference
+    ''' - Calculates Y coordinate: btnTelemedicine.Bottom + 10 (spacing)
+    ''' - X coordinate: Matches sidebar button standard (20px from left)
+    ''' - Ensures button appears below existing Telemedicine button
+    ''' 
+    ''' STYLING SPECIFICATIONS:
+    ''' - BackColor: DarkCyan (medical teal theme)
+    ''' - ForeColor: White (high contrast for accessibility)
+    ''' - FlatStyle: Flat (modern UI consistency)
+    ''' - Font: Arial, 10pt, Bold (matches sidebar buttons)
+    ''' - Size: 210 x 40 (standard sidebar button dimensions)
+    ''' 
+    ''' ERROR HANDLING:
+    ''' - Try/Catch block captures initialization failures
+    ''' - Logs errors to audit trail via ModuleDatabase.LogError
+    ''' - Non-fatal: Application continues if button creation fails
+    ''' 
+    ''' CALLED FROM:
+    ''' - FormMain_Load (after ConfigureDashboardForRole)
+    ''' </summary>
+    Private Sub InjectTelehealthButton()
+        Try
+            ' ═══════════════════════════════════════════════════════════════
+            ' STEP 1: DUPLICATE PREVENTION CHECK
+            ' Verify button doesn't already exist to prevent rendering conflicts
+            ' ═══════════════════════════════════════════════════════════════
+            If pnlSidebar.Controls.ContainsKey("btnLaunchTelehealth") Then
+                ModuleDatabase.LogError("InjectTelehealthButton: Button already exists, skipping injection")
+                Return
+            End If
+
+            ' ═══════════════════════════════════════════════════════════════
+            ' STEP 2: INSTANTIATE BUTTON WITH MEDICAL-GRADE STYLING
+            ' Create new button matching enterprise design system standards
+            ' ═══════════════════════════════════════════════════════════════
+            btnLaunchTelehealth = New Button With {
+                .Name = "btnLaunchTelehealth",
+                .Text = "📞 Launch Telehealth",
+                .Size = New Size(210, 40),
+                .BackColor = Color.DarkCyan,  ' Medical teal theme
+                .ForeColor = Color.White,
+                .FlatStyle = FlatStyle.Flat,
+                .Font = New Font("Arial", 10, FontStyle.Bold),
+                .Cursor = Cursors.Hand,
+                .TextAlign = ContentAlignment.MiddleLeft,
+                .Padding = New Padding(15, 0, 0, 0),
+                .TabIndex = 8,
+                .UseVisualStyleBackColor = False
+            }
+
+            ' Modern flat appearance with hover effects
+            btnLaunchTelehealth.FlatAppearance.BorderSize = 0
+            btnLaunchTelehealth.FlatAppearance.MouseOverBackColor = Color.FromArgb(0, 130, 130)  ' Lighter cyan on hover
+
+            ' ═══════════════════════════════════════════════════════════════
+            ' STEP 3: DYNAMIC COORDINATE CALCULATION
+            ' Position button relative to existing Telemedicine button
+            ' ═══════════════════════════════════════════════════════════════
+            If btnTelemedicine IsNot Nothing Then
+                ' Calculate position: 10 pixels below Telemedicine button
+                Dim calculatedY As Integer = btnTelemedicine.Bottom + 10
+                btnLaunchTelehealth.Location = New Point(20, calculatedY)
+            Else
+                ' Fallback: Use fixed position if reference button not found
+                btnLaunchTelehealth.Location = New Point(20, 480)
+                ModuleDatabase.LogError("InjectTelehealthButton: Reference button not found, using fallback position")
+            End If
+
+            ' ═══════════════════════════════════════════════════════════════
+            ' STEP 4: EVENT HANDLER WIRING
+            ' Link Click event to existing btnLaunchTelehealth_Click handler
+            ' ═══════════════════════════════════════════════════════════════
+            AddHandler btnLaunchTelehealth.Click, AddressOf btnLaunchTelehealth_Click
+
+            ' ═══════════════════════════════════════════════════════════════
+            ' STEP 5: SIDEBAR INJECTION & Z-ORDER MANAGEMENT
+            ' Add button to sidebar panel and bring to front for visibility
+            ' ═══════════════════════════════════════════════════════════════
+            pnlSidebar.Controls.Add(btnLaunchTelehealth)
+            btnLaunchTelehealth.BringToFront()
+
+            ModuleDatabase.LogError("InjectTelehealthButton: SUCCESS - Launch Telehealth button injected at runtime")
+
+        Catch ex As Exception
+            ModuleDatabase.LogError($"InjectTelehealthButton: CRITICAL FAILURE - {ex.Message}")
+            ' Non-fatal error: Application continues without button
+            MessageBox.Show(
+                "Failed to initialize Launch Telehealth button. Contact IT support if this persists." & Environment.NewLine & Environment.NewLine &
+                "Technical Details: " & ex.Message,
+                "UI Initialization Warning",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning
+            )
+        End Try
+    End Sub
+#End Region
 
     ''' <summary>
     ''' ROLE-SPECIFIC DASHBOARD CONFIGURATION
@@ -470,7 +595,7 @@ Public Class FormMain
                 statCard4.BackColor = Color.FromArgb(100, 100, 150)
 
                 ' ===================================================================
-                ' POPULATE DATA GRID: Doctor's Personal Appointment Queue
+                ' POPULATE DATA GRID: Doctor's Personal Appointment Queue with ESI Triage
                 ' ===================================================================
                 dgvDashboardData.Visible = True
                 dgvDashboardData.DataSource = GetDoctorAppointments(_currentDoctorID)
@@ -481,17 +606,15 @@ Public Class FormMain
                 dgvDashboardData.ColumnHeadersDefaultCellStyle.Font = New Font("Arial", 10, FontStyle.Bold)
                 dgvDashboardData.EnableHeadersVisualStyles = False
 
-                ' Highlight emergency appointments
-                For Each row As DataGridViewRow In dgvDashboardData.Rows
-                    If row.Cells("Emergency").Value IsNot Nothing AndAlso _
-                       row.Cells("Emergency").Value.ToString() = "Yes" Then
-                        row.DefaultCellStyle.BackColor = Color.FromArgb(255, 220, 220)
-                        row.DefaultCellStyle.Font = New Font("Arial", 9, FontStyle.Bold)
-                    End If
-                Next
+                ' ===================================================================
+                ' ESI TRIAGE COLOR-CODING
+                ' CellFormatting event handler automatically applies color-coding
+                ' Critical patients (Level 1) auto-sorted to top via GetDoctorAppointments
+                ' Legacy emergency highlighting replaced by ESI visual triage system
+                ' ===================================================================
 
                 LogError($"ConfigureDashboardForRole: Doctor dashboard configured for '{username}' (DoctorID={_currentDoctorID}) | " &
-                        $"Appointments={metrics.MyAppointmentsToday} | Urgent={metrics.UrgentCasesCount} | Completed={metrics.CompletedShiftsToday}")
+                        $"Appointments={metrics.MyAppointmentsToday} | Urgent={metrics.UrgentCasesCount} | Completed={metrics.CompletedShiftsToday} | ESI Triage Color-Coding ENABLED")
 
             ' ===================================================================
             ' PATIENT / RECEPTIONIST DASHBOARD (Future Enhancement)
@@ -622,6 +745,224 @@ Public Class FormMain
         End Try
     End Sub
 
+    Private Sub btnTelemedicine_Click(sender As Object, e As EventArgs) Handles btnTelemedicine.Click
+        Try
+            ' ===================================================================
+            ' TELEMEDICINE MODULE LAUNCHER - VIDEO CONSULTATION PORTAL
+            ' ===================================================================
+            ' FEATURES:
+            ' - WebView2-powered secure video conferencing
+            ' - HTTPS-only medical portal navigation (HIPAA compliance)
+            ' - Dynamic video room generation with appointment tracking
+            ' - Support for Daily.co, Jitsi Meet, and Zoom platforms
+            ' - Context-aware: Passes appointment data from selected row
+            ' ===================================================================
+
+            LogError("btnTelemedicine_Click: Launching telemedicine portal")
+
+            ' ===================================================================
+            ' ATTEMPT TO EXTRACT APPOINTMENT CONTEXT FROM SELECTED ROW
+            ' If doctor has appointment selected, pass context to telemedicine form
+            ' Otherwise, launch portal in standalone mode (manual room entry)
+            ' ===================================================================
+            Dim selectedAppointmentID As String = String.Empty
+            Dim selectedPatientName As String = String.Empty
+
+            ' Check if DataGridView is visible and has a selected row
+            If dgvDashboardData.Visible AndAlso dgvDashboardData.SelectedRows.Count > 0 Then
+                Try
+                    ' ===================================================================
+                    ' EXTRACT APPOINTMENT DATA FROM SELECTED ROW
+                    ' Defensive programming: Check for column existence and DBNull values
+                    ' ===================================================================
+                    Dim selectedRow As DataGridViewRow = dgvDashboardData.SelectedRows(0)
+
+                    ' Extract Appointment ID (column name: "Appointment ID")
+                    If dgvDashboardData.Columns.Contains("Appointment ID") AndAlso selectedRow.Cells("Appointment ID").Value IsNot Nothing Then
+                        Dim appointmentIDValue As Object = selectedRow.Cells("Appointment ID").Value
+                        If Not IsDBNull(appointmentIDValue) Then
+                            selectedAppointmentID = appointmentIDValue.ToString().Trim()
+                        End If
+                    End If
+
+                    ' Extract Patient Name (column name: "Patient Name")
+                    If dgvDashboardData.Columns.Contains("Patient Name") AndAlso selectedRow.Cells("Patient Name").Value IsNot Nothing Then
+                        Dim patientNameValue As Object = selectedRow.Cells("Patient Name").Value
+                        If Not IsDBNull(patientNameValue) Then
+                            selectedPatientName = patientNameValue.ToString().Trim()
+                        End If
+                    End If
+
+                    ' Validate extracted data
+                    If Not String.IsNullOrWhiteSpace(selectedAppointmentID) AndAlso Not String.IsNullOrWhiteSpace(selectedPatientName) Then
+                        LogError($"btnTelemedicine_Click: Appointment context extracted | AppointmentID={selectedAppointmentID} | PatientName={selectedPatientName}")
+                    Else
+                        LogError("btnTelemedicine_Click: Selected row does not contain valid appointment data, launching in standalone mode")
+                    End If
+
+                Catch extractEx As Exception
+                    ' Non-fatal error: If extraction fails, continue with standalone launch
+                    LogError($"btnTelemedicine_Click: Error extracting appointment context (non-fatal): {extractEx.Message}")
+                End Try
+            Else
+                LogError("btnTelemedicine_Click: No appointment selected, launching telemedicine portal in standalone mode")
+            End If
+
+            ' ===================================================================
+            ' LAUNCH TELEMEDICINE FORM
+            ' ===================================================================
+            Dim frmTelemedicine As New FormTelemedicine()
+
+            ' ===================================================================
+            ' CONTEXT-AWARE LAUNCH: Pass appointment data if available
+            ' ===================================================================
+            If Not String.IsNullOrWhiteSpace(selectedAppointmentID) AndAlso Not String.IsNullOrWhiteSpace(selectedPatientName) Then
+                ' Show confirmation dialog before launching consultation
+                Dim confirmResult As DialogResult = MessageBox.Show(
+                    $"Launch video consultation for:" & Environment.NewLine & Environment.NewLine &
+                    $"Patient: {selectedPatientName}" & Environment.NewLine &
+                    $"Appointment ID: {selectedAppointmentID}" & Environment.NewLine & Environment.NewLine &
+                    "Continue?",
+                    "Confirm Consultation Launch",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question
+                )
+
+                If confirmResult = DialogResult.Yes Then
+                    ' Pass appointment context to telemedicine form BEFORE showing it
+                    frmTelemedicine.ActiveAppointmentID = selectedAppointmentID
+                    frmTelemedicine.ActivePatientName = selectedPatientName
+
+                    ' Show form (non-modal to allow dashboard interaction)
+                    frmTelemedicine.Show()
+
+                    ' Load active consultation context (auto-navigates to room)
+                    frmTelemedicine.LoadActiveConsultation(selectedAppointmentID, selectedPatientName)
+
+                    LogError($"btnTelemedicine_Click: Telemedicine portal launched with appointment context | AppointmentID={selectedAppointmentID}")
+                Else
+                    LogError("btnTelemedicine_Click: User cancelled consultation launch")
+                    frmTelemedicine.Dispose()
+                    Return
+                End If
+            Else
+                ' Standalone launch (no appointment context) - show modal dialog
+                frmTelemedicine.ShowDialog()
+                frmTelemedicine.Dispose()
+                LogError("btnTelemedicine_Click: Telemedicine portal launched in standalone mode (no appointment context)")
+            End If
+
+        Catch ex As Exception
+            MessageBox.Show("Error opening Telemedicine portal: " & ex.Message, "Error",
+                MessageBoxButtons.OK, MessageBoxIcon.Error)
+            ModuleDatabase.LogError($"btnTelemedicine_Click error: {ex.Message}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' DASHBOARD ENTRY POINT: LAUNCH TELEHEALTH CONSULTATION FROM SELECTED APPOINTMENT
+    ''' 
+    ''' WORKFLOW:
+    ''' 1. Validates that an appointment row is selected in the DataGridView
+    ''' 2. Extracts AppointmentID and PatientName with defensive DBNull checks
+    ''' 3. Instantiates FormTelemedicine and passes context data
+    ''' 4. Calls .Show() to bring telemedicine portal to front (non-modal)
+    ''' 5. Auto-navigates to secure room: https://meet.jit.si/medicare-hms-room-{appointmentID}
+    ''' 
+    ''' VALIDATION:
+    ''' - Shows friendly error if no row is selected
+    ''' - Validates column existence and DBNull values before access
+    ''' - Provides detailed audit logging
+    ''' 
+    ''' USAGE:
+    ''' - Wire to button: Handles btnLaunchTelehealth.Click
+    ''' - Or call directly from context menu / double-click handler
+    ''' </summary>
+    Private Sub btnLaunchTelehealth_Click(sender As Object, e As EventArgs)
+        ' ===================================================================
+        ' DEFENSIVE VALIDATION: ENSURE ROW IS SELECTED
+        ' ===================================================================
+        If dgvDashboardData.CurrentRow Is Nothing OrElse dgvDashboardData.CurrentRow.Index < 0 Then
+            MessageBox.Show(
+                "Please select an active patient appointment from the grid before launching the telemedicine suite.",
+                "No Appointment Selected",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning
+            )
+            LogError("btnLaunchTelehealth_Click: REJECTED - No appointment row selected")
+            Return
+        End If
+
+        Try
+            LogError("btnLaunchTelehealth_Click: Telehealth launch requested from dashboard")
+
+            ' ===================================================================
+            ' EXTRACT APPOINTMENT CONTEXT WITH DEFENSIVE TYPING
+            ''' Safely extract values from the selected DataGridView row
+            ' ===================================================================
+            Dim selectedRow As DataGridViewRow = dgvDashboardData.CurrentRow
+
+            ' Check for DBNull defensively to prevent parsing crashes
+            If selectedRow.Cells("Appointment ID").Value Is DBNull.Value OrElse 
+               selectedRow.Cells("Patient Name").Value Is DBNull.Value Then
+                MessageBox.Show(
+                    "The selected record contains incomplete clinical identifiers.",
+                    "Data Integrity Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error
+                )
+                LogError("btnLaunchTelehealth_Click: REJECTED - DBNull values in required fields")
+                Return
+            End If
+
+            ' Extract appointment data with type-safe conversion
+            Dim targetApptID As String = Convert.ToString(selectedRow.Cells("Appointment ID").Value)
+            Dim targetPatientName As String = Convert.ToString(selectedRow.Cells("Patient Name").Value)
+
+            ' Validate extracted data is not empty
+            If String.IsNullOrWhiteSpace(targetApptID) OrElse String.IsNullOrWhiteSpace(targetPatientName) Then
+                MessageBox.Show(
+                    "The selected appointment does not contain valid patient or appointment data." & Environment.NewLine & Environment.NewLine &
+                    "Please ensure the appointment record is complete before launching telehealth.",
+                    "Invalid Appointment Data",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning
+                )
+                LogError($"btnLaunchTelehealth_Click: REJECTED - Empty data | AppointmentID={targetApptID} | PatientName={targetPatientName}")
+                Return
+            End If
+
+            LogError($"btnLaunchTelehealth_Click: Appointment data validated | AppointmentID={targetApptID} | PatientName={targetPatientName}")
+
+            ' ===================================================================
+            ' INSTANTIATE TELEMEDICINE FORM AND PASS CONTEXT
+            ' ===================================================================
+            Dim telehealthPortal As New FormTelemedicine()
+            telehealthPortal.ActiveAppointmentID = targetApptID
+            telehealthPortal.ActivePatientName = targetPatientName
+
+            ' ===================================================================
+            ' SHOW FORM (NON-MODAL) AND AUTO-NAVIGATE TO SECURE ROOM
+            ' Show the form first to trigger its handle creation
+            ' ===================================================================
+            telehealthPortal.Show()
+
+            ' Route the clinical context and initialize the browser environment
+            telehealthPortal.LoadActiveConsultation(targetApptID, targetPatientName)
+
+            LogError($"btnLaunchTelehealth_Click: SUCCESS - Telehealth portal launched | AppointmentID={targetApptID} | PatientName={targetPatientName}")
+
+        Catch ex As Exception
+            MessageBox.Show(
+                "Critical failure launching telemedicine runtime environment: " & ex.Message,
+                "System Failure",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error
+            )
+            ModuleDatabase.LogError($"btnLaunchTelehealth_Click error: {ex.Message}")
+        End Try
+    End Sub
+
     Private Sub btnLogout_Click(sender As Object, e As EventArgs) Handles btnLogout.Click
         Try
             ' Confirm explicit logout intent
@@ -647,6 +988,121 @@ Public Class FormMain
                 MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
+#End Region
+
+#Region "ESI Triage Color-Coding - Emergency Severity Index Visual System"
+
+    ''' <summary>
+    ''' DATAGRIDVIEW CELL FORMATTING EVENT HANDLER
+    ''' Applies Emergency Severity Index (ESI) color-coding to appointment queue rows
+    ''' 
+    ''' WORKFLOW:
+    ''' 1. Extracts ESI level and TriageColor from bound DataRow
+    ''' 2. Applies soft medical safety colors to entire row (BackColor, SelectionBackColor)
+    ''' 3. Enhances text legibility with high-contrast foreground colors
+    ''' 4. Critical (Level 1) patients automatically sorted to top of queue
+    ''' 
+    ''' COLOR PALETTE (Soft Medical Safety Colors):
+    ''' - Level 1 (CRITICAL): Soft Red (255, 200, 200) - Immediate life-threatening
+    ''' - Level 2 (URGENT): Soft Amber (255, 235, 180) - High-risk deterioration
+    ''' - Level 3 (MODERATE): Soft Yellow (255, 255, 200) - Stable, requires evaluation
+    ''' - Level 4-5 (LOW/MINIMAL): Soft Green/Blue - Non-urgent conditions
+    ''' 
+    ''' DEFENSIVE PROGRAMMING:
+    ''' - Null-safe: Handles missing TriageColor column gracefully
+    ''' - Type-safe: Explicit conversions with DBNull checks
+    ''' - Performance: Only formats visible cells (CellFormatting event)
+    ''' </summary>
+    Private Sub DgvDashboardData_CellFormatting(sender As Object, e As DataGridViewCellFormattingEventArgs)
+        Try
+            ' Cast sender to DataGridView for type safety
+            Dim dgv As DataGridView = TryCast(sender, DataGridView)
+            If dgv Is Nothing OrElse e.RowIndex < 0 Then Return
+
+            ' ===================================================================
+            ' DEFENSIVE NULL CHECK: Ensure row is bound to data
+            ' ===================================================================
+            If dgv.Rows(e.RowIndex).DataBoundItem Is Nothing Then Return
+
+            ' ===================================================================
+            ' EXTRACT TRIAGE COLOR FROM BOUND DATAROW
+            ' TriageColor column stores Color.ToArgb() integer value
+            ' ===================================================================
+            Dim row As DataRowView = TryCast(dgv.Rows(e.RowIndex).DataBoundItem, DataRowView)
+            If row Is Nothing Then Return
+
+            ' Check if TriageColor column exists (defensive against schema changes)
+            If Not row.Row.Table.Columns.Contains("TriageColor") Then Return
+
+            ' Extract TriageColor value (nullable to handle DBNull)
+            Dim triageColorArgb As Object = row.Row("TriageColor")
+            If IsDBNull(triageColorArgb) Then Return
+
+            ' Convert ARGB integer back to Color structure
+            Dim triageColor As Color = Color.FromArgb(CInt(triageColorArgb))
+
+            ' ===================================================================
+            ' APPLY ROW-LEVEL COLOR FORMATTING
+            ' BackColor: Base row color for unselected state
+            ' SelectionBackColor: Darker shade for selected state (maintains visibility)
+            ' ForeColor: High-contrast text color for legibility
+            ' ===================================================================
+            dgv.Rows(e.RowIndex).DefaultCellStyle.BackColor = triageColor
+            dgv.Rows(e.RowIndex).DefaultCellStyle.SelectionBackColor = DarkenColor(triageColor, 0.15F)
+            dgv.Rows(e.RowIndex).DefaultCellStyle.ForeColor = Color.Black
+            dgv.Rows(e.RowIndex).DefaultCellStyle.SelectionForeColor = Color.Black
+
+            ' ===================================================================
+            ' OPTIONAL: BOLD FONT FOR CRITICAL PATIENTS (ESI LEVEL 1)
+            ' Draws additional visual attention to life-threatening cases
+            ' ===================================================================
+            If row.Row.Table.Columns.Contains("ESILevel") Then
+                Dim esiLevel As Object = row.Row("ESILevel")
+                If Not IsDBNull(esiLevel) AndAlso CInt(esiLevel) = 1 Then
+                    dgv.Rows(e.RowIndex).DefaultCellStyle.Font = New Font(dgv.Font, FontStyle.Bold)
+                End If
+            End If
+
+            ' ===================================================================
+            ' HIDE INTERNAL TRIAGE COLUMNS FROM USER VIEW
+            ' ESILevel, TriageColor, SeverityLabel are used for formatting only
+            ' ===================================================================
+            If dgv.Columns.Contains("ESILevel") Then dgv.Columns("ESILevel").Visible = False
+            If dgv.Columns.Contains("TriageColor") Then dgv.Columns("TriageColor").Visible = False
+            If dgv.Columns.Contains("SeverityLabel") Then dgv.Columns("SeverityLabel").Visible = False
+            If dgv.Columns.Contains("PatientIDInternal") Then dgv.Columns("PatientIDInternal").Visible = False
+
+            ' Hide raw vitals columns (optional - doctors can see values directly if needed)
+            If dgv.Columns.Contains("SystolicBP") Then dgv.Columns("SystolicBP").Visible = False
+            If dgv.Columns.Contains("DiastolicBP") Then dgv.Columns("DiastolicBP").Visible = False
+            If dgv.Columns.Contains("HeartRate") Then dgv.Columns("HeartRate").Visible = False
+            If dgv.Columns.Contains("SpO2") Then dgv.Columns("SpO2").Visible = False
+            If dgv.Columns.Contains("Vitals Recorded") Then dgv.Columns("Vitals Recorded").Visible = False
+
+        Catch ex As Exception
+            ' ===================================================================
+            ' CATASTROPHIC ERROR HANDLING
+            ' If formatting fails, log error but DO NOT crash application
+            ' Medical systems must remain operational even with UI formatting issues
+            ' ===================================================================
+            LogError($"DgvDashboardData_CellFormatting error: {ex.Message} | RowIndex={e.RowIndex} | ColumnIndex={e.ColumnIndex}")
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' UTILITY FUNCTION: Darkens a color by specified percentage
+    ''' Used to create Selection background color (slightly darker than base color)
+    ''' </summary>
+    ''' <param name="color">Base color to darken</param>
+    ''' <param name="factor">Darkening factor (0.0 to 1.0, where 0.15 = 15% darker)</param>
+    ''' <returns>Darkened color for selection highlighting</returns>
+    Private Function DarkenColor(color As Color, factor As Single) As Color
+        Dim r As Integer = CInt(Math.Max(0, color.R * (1 - factor)))
+        Dim g As Integer = CInt(Math.Max(0, color.G * (1 - factor)))
+        Dim b As Integer = CInt(Math.Max(0, color.B * (1 - factor)))
+        Return Color.FromArgb(r, g, b)
+    End Function
+
 #End Region
 
 End Class

@@ -1,0 +1,174 @@
+' ═══════════════════════════════════════════════════════════════════════════════
+' FORMEMAIN.VB - TELEHEALTH BUTTON PROGRAMMATIC CREATION
+' Copy this entire code block into FormMain.vb if you want to create the button in code
+' ═══════════════════════════════════════════════════════════════════════════════
+
+' STEP 1: Add this to your class-level declarations (near top of FormMain.vb)
+' Find where other buttons are declared and add:
+'
+' Private WithEvents btnLaunchTelehealth As Button
+
+' STEP 2: Add this initialization method to FormMain.vb class
+
+#Region "Telehealth Button - Programmatic Creation"
+	''' <summary>
+	''' Programmatically creates the Launch Telehealth button and wires event handler.
+	''' Call this from FormMain_Load or after InitializeComponent().
+	''' </summary>
+	Private Sub InitializeTelehealthButton()
+		Try
+			' Create button with medical-grade styling
+			btnLaunchTelehealth = New Button With {
+				.Name = "btnLaunchTelehealth",
+				.Text = "📞 Launch Telehealth",
+				.Size = New Size(120, 35),
+				.Location = New Point(20, 420),  ' Adjust Y coordinate based on your layout
+				.BackColor = Color.FromArgb(0, 120, 212),  ' Medical Blue
+				.ForeColor = Color.White,
+				.FlatStyle = FlatStyle.Flat,
+				.Font = New Font("Arial", 10, FontStyle.Bold),
+				.Cursor = Cursors.Hand,
+				.TabIndex = 7,
+				.UseVisualStyleBackColor = False,
+				.Anchor = AnchorStyles.Top Or AnchorStyles.Left
+			}
+
+			' Modern flat appearance
+			btnLaunchTelehealth.FlatAppearance.BorderSize = 0
+			btnLaunchTelehealth.FlatAppearance.MouseOverBackColor = Color.FromArgb(0, 130, 220)
+			btnLaunchTelehealth.FlatAppearance.MouseDownBackColor = Color.FromArgb(0, 100, 180)
+
+			' Wire event handler (implementation already exists in FormMain.vb)
+			AddHandler btnLaunchTelehealth.Click, AddressOf btnLaunchTelehealth_Click
+
+			' Add to form
+			Me.Controls.Add(btnLaunchTelehealth)
+			btnLaunchTelehealth.BringToFront()
+
+			ModuleDatabase.LogError("InitializeTelehealthButton: Button created and wired successfully")
+
+		Catch ex As Exception
+			ModuleDatabase.LogError($"InitializeTelehealthButton error: {ex.Message}")
+			MessageBox.Show($"Failed to create telehealth button: {ex.Message}", 
+						   "Initialization Error", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+		End Try
+	End Sub
+#End Region
+
+' STEP 3: Call from FormMain_Load
+' Add this line to your FormMain_Load event handler:
+'
+' Private Sub FormMain_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+'     Try
+'         ' ... existing initialization code ...
+'         ConfigureDashboardForRole()
+'         LoadDashboardData()
+'         
+'         ' ADD THIS LINE:
+'         InitializeTelehealthButton()
+'         
+'     Catch ex As Exception
+'         MessageBox.Show("Error loading dashboard: " & ex.Message)
+'     End Try
+' End Sub
+
+' ═══════════════════════════════════════════════════════════════════════════════
+' THE BUTTON CLICK HANDLER IS ALREADY IMPLEMENTED IN FORMMAIN.VB (LINES 746-848)
+' You don't need to add it - it's already there and working!
+' ═══════════════════════════════════════════════════════════════════════════════
+
+' ═══════════════════════════════════════════════════════════════════════════════
+' OPTIONAL ENHANCEMENTS
+' ═══════════════════════════════════════════════════════════════════════════════
+
+#Region "Optional: Keyboard Shortcut (Ctrl+T)"
+	''' <summary>
+	''' Adds Ctrl+T keyboard shortcut to launch telehealth.
+	''' Also set: Me.KeyPreview = True in Form properties or Form_Load
+	''' </summary>
+	Private Sub FormMain_KeyDown(sender As Object, e As KeyEventArgs) Handles Me.KeyDown
+		Try
+			' Ctrl+T: Quick Launch Telehealth
+			If e.Control AndAlso e.KeyCode = Keys.T Then
+				e.Handled = True
+				e.SuppressKeyPress = True
+				btnLaunchTelehealth_Click(Me, EventArgs.Empty)
+			End If
+		Catch ex As Exception
+			ModuleDatabase.LogError($"FormMain_KeyDown error: {ex.Message}")
+		End Try
+	End Sub
+#End Region
+
+#Region "Optional: Double-Click Row to Launch"
+	''' <summary>
+	''' Launches telehealth when user double-clicks an appointment row.
+	''' </summary>
+	Private Sub dgvDashboardData_CellDoubleClick(sender As Object, e As DataGridViewCellEventArgs) Handles dgvDashboardData.CellDoubleClick
+		Try
+			' Ignore header row double-clicks
+			If e.RowIndex < 0 Then Return
+
+			' Auto-launch telehealth for double-clicked row
+			btnLaunchTelehealth_Click(sender, EventArgs.Empty)
+
+		Catch ex As Exception
+			ModuleDatabase.LogError($"dgvDashboardData_CellDoubleClick error: {ex.Message}")
+		End Try
+	End Sub
+#End Region
+
+#Region "Optional: Right-Click Context Menu"
+	''' <summary>
+	''' Context menu handler for right-click "Launch Video Consultation" option.
+	''' Prerequisites:
+	''' 1. Create ContextMenuStrip in Designer named "cmsAppointments"
+	''' 2. Add menu item named "MenuLaunchTelehealth" with text "Launch Video Consultation"
+	''' 3. Assign to DataGridView: dgvDashboardData.ContextMenuStrip = cmsAppointments
+	''' </summary>
+	Private Sub MenuLaunchTelehealth_Click(sender As Object, e As EventArgs)
+		Try
+			' Reuse existing button logic
+			btnLaunchTelehealth_Click(sender, e)
+		Catch ex As Exception
+			ModuleDatabase.LogError($"MenuLaunchTelehealth_Click error: {ex.Message}")
+		End Try
+	End Sub
+#End Region
+
+' ═══════════════════════════════════════════════════════════════════════════════
+' TESTING CHECKLIST AFTER ADDING BUTTON
+' ═══════════════════════════════════════════════════════════════════════════════
+'
+' TEST 1: No Selection Validation
+' - Run app, login, click button WITHOUT selecting a row
+' - Expected: MessageBox "Please select an active patient appointment from the grid..."
+'
+' TEST 2: Valid Launch
+' - Select an appointment row (e.g., APT-2026-001 | John Smith)
+' - Click button
+' - Expected: Telemedicine form opens, navigates to: 
+'   https://meet.jit.si/medicare-hms-room-APT2026001
+'
+' TEST 3: DBNull Validation
+' - Select a row with NULL AppointmentID or PatientName
+' - Click button
+' - Expected: MessageBox "The selected record contains incomplete clinical identifiers."
+'
+' TEST 4: Keyboard Shortcut (if enabled)
+' - Select appointment row
+' - Press Ctrl+T
+' - Expected: Same as clicking button
+'
+' TEST 5: Double-Click Launch (if enabled)
+' - Double-click an appointment row
+' - Expected: Telemedicine form launches
+'
+' TEST 6: Audit Logging
+' - Launch telehealth for any appointment
+' - Check hospital_appointments.db → AuditLog table
+' - Expected: Multiple log entries for the launch process
+'
+' ═══════════════════════════════════════════════════════════════════════════════
+' END OF CODE TEMPLATE
+' ═══════════════════════════════════════════════════════════════════════════════

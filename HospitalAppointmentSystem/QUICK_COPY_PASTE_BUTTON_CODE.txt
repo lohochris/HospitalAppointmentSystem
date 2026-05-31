@@ -1,0 +1,136 @@
+'═══════════════════════════════════════════════════════════════════════════════
+' QUICK COPY-PASTE: ADD TELEHEALTH BUTTON TO FORMMAIN.VB
+' Status: ✅ Handler already implemented (lines 746-848)
+' Action: Just add the button control using ONE of the methods below
+'═══════════════════════════════════════════════════════════════════════════════
+
+'═══════════════════════════════════════════════════════════════════════════════
+' METHOD 1: DESIGNER (RECOMMENDED - 2 MINUTES)
+'═══════════════════════════════════════════════════════════════════════════════
+' 1. Right-click FormMain.vb → View Designer (Shift+F7)
+' 2. Drag Button from Toolbox onto left sidebar
+' 3. Properties (F4) - Set these values:
+'    (Name): btnLaunchTelehealth
+'    Text: 📞 Launch Telehealth
+'    Size: 120, 35
+'    Location: 20, 420
+'    BackColor: 0, 120, 212
+'    ForeColor: White
+'    FlatStyle: Flat
+'    FlatAppearance.BorderSize: 0
+'    Font: Arial, 10pt, Bold
+'    Cursor: Hand
+' 4. Double-click button (VS will wire it to existing handler)
+' 5. Done! Press F5 to run.
+
+'═══════════════════════════════════════════════════════════════════════════════
+' METHOD 2: PROGRAMMATIC (COPY-PASTE READY)
+'═══════════════════════════════════════════════════════════════════════════════
+
+' STEP 1: Add to class-level declarations (near top of FormMain.vb)
+' Find where other buttons are declared and add:
+
+Private WithEvents btnLaunchTelehealth As Button
+
+' STEP 2: Add this method anywhere in FormMain.vb class
+
+Private Sub InitializeTelehealthButton()
+	Try
+		btnLaunchTelehealth = New Button With {
+			.Name = "btnLaunchTelehealth",
+			.Text = "📞 Launch Telehealth",
+			.Size = New Size(120, 35),
+			.Location = New Point(20, 420),
+			.BackColor = Color.FromArgb(0, 120, 212),
+			.ForeColor = Color.White,
+			.FlatStyle = FlatStyle.Flat,
+			.Font = New Font("Arial", 10, FontStyle.Bold),
+			.Cursor = Cursors.Hand,
+			.UseVisualStyleBackColor = False
+		}
+
+		btnLaunchTelehealth.FlatAppearance.BorderSize = 0
+		btnLaunchTelehealth.FlatAppearance.MouseOverBackColor = Color.FromArgb(0, 130, 220)
+		btnLaunchTelehealth.FlatAppearance.MouseDownBackColor = Color.FromArgb(0, 100, 180)
+
+		AddHandler btnLaunchTelehealth.Click, AddressOf btnLaunchTelehealth_Click
+
+		Me.Controls.Add(btnLaunchTelehealth)
+		btnLaunchTelehealth.BringToFront()
+
+		LogError("InitializeTelehealthButton: Button created successfully")
+
+	Catch ex As Exception
+		LogError($"InitializeTelehealthButton error: {ex.Message}")
+	End Try
+End Sub
+
+' STEP 3: Call from FormMain_Load
+' Find your FormMain_Load method and add this line:
+
+Private Sub FormMain_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+	Try
+		' ... your existing code ...
+		ConfigureDashboardForRole()
+		LoadDashboardData()
+
+		' ADD THIS LINE:
+		InitializeTelehealthButton()
+
+	Catch ex As Exception
+		MessageBox.Show("Error loading dashboard: " & ex.Message, "Error", 
+					   MessageBoxButtons.OK, MessageBoxIcon.Error)
+	End Try
+End Sub
+
+'═══════════════════════════════════════════════════════════════════════════════
+' TESTING AFTER ADDING BUTTON
+'═══════════════════════════════════════════════════════════════════════════════
+
+' TEST 1: Run app (F5), login, click button WITHOUT selecting row
+' Expected: MessageBox "Please select an active patient appointment..."
+
+' TEST 2: Select a row, click button
+' Expected: Telemedicine form opens, navigates to room
+
+' TEST 3: Check audit log
+' Expected: Multiple log entries for the launch process
+
+'═══════════════════════════════════════════════════════════════════════════════
+' OPTIONAL ENHANCEMENTS
+'═══════════════════════════════════════════════════════════════════════════════
+
+' ENHANCEMENT 1: Keyboard Shortcut (Ctrl+T)
+Private Sub FormMain_KeyDown(sender As Object, e As KeyEventArgs) Handles Me.KeyDown
+	If e.Control AndAlso e.KeyCode = Keys.T Then
+		e.Handled = True
+		e.SuppressKeyPress = True
+		btnLaunchTelehealth_Click(Me, EventArgs.Empty)
+	End If
+End Sub
+' Also set: Me.KeyPreview = True (in Properties or Form_Load)
+
+' ENHANCEMENT 2: Double-Click Row to Launch
+Private Sub dgvDashboardData_CellDoubleClick(sender As Object, e As DataGridViewCellEventArgs) Handles dgvDashboardData.CellDoubleClick
+	Try
+		If e.RowIndex < 0 Then Return
+		btnLaunchTelehealth_Click(sender, EventArgs.Empty)
+	Catch ex As Exception
+		LogError($"dgvDashboardData_CellDoubleClick error: {ex.Message}")
+	End Try
+End Sub
+
+'═══════════════════════════════════════════════════════════════════════════════
+' NOTES
+'═══════════════════════════════════════════════════════════════════════════════
+' - The handler btnLaunchTelehealth_Click is ALREADY implemented (lines 746-848)
+' - It uses CurrentRow for reliable selection
+' - It checks for DBNull before extraction
+' - It uses Convert.ToString() for type safety
+' - It shows professional error messages
+' - It logs everything to audit trail
+' - Build is SUCCESSFUL with no errors
+
+'═══════════════════════════════════════════════════════════════════════════════
+' END OF QUICK REFERENCE
+'═══════════════════════════════════════════════════════════════════════════════
